@@ -4,6 +4,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 from scipy.spatial import KDTree
+import numpy as np
 
 import math
 
@@ -58,7 +59,7 @@ class WaypointUpdater(object):
     def get_closest_waypoint_idx(self):
         x = self.pose.pose.position.x
         y = self.pose.pose.position.y
-        closest_idx = self.waypoint_tree.query([x, y], 1)[1]
+        closest_idx = self.waypoints_tree.query([x, y], 1)[1]
 
         # Check if closest is ahead or behind vehicle
         closest_coord = self.waypoints_2d[closest_idx]
