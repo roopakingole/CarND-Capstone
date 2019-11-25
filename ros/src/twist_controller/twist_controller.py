@@ -1,5 +1,5 @@
 from pid import PID
-from losspass import LowPassFilter
+from lowpass import LowPassFilter
 from yaw_controller import YawController
 import rospy
 
