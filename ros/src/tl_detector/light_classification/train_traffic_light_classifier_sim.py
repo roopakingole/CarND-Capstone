@@ -30,17 +30,17 @@ labels = []
 
 
 for i in range(1):
-    paths = glob(os.path.join('sim_image_data_and_label/Red', '*.jpg'))
+    paths = glob(os.path.join('/home/student/code/sim_images/Red', '*.jpg'))
     for path in paths:
         img = cv2.imread(path)
         features.append(img)
         labels.append( categories[0] )
-    paths = glob(os.path.join('sim_image_data_and_label/Yellow', '*.jpg'))
+    paths = glob(os.path.join('/home/student/code/sim_images/Yellow', '*.jpg'))
     for path in paths:
         img = cv2.imread(path)
         features.append(img)
         labels.append( categories[1] )
-    paths = glob(os.path.join('sim_image_data_and_label/Green', '*.jpg'))
+    paths = glob(os.path.join('/home/student/code/sim_images/Green', '*.jpg'))
     for path in paths:
         img = cv2.imread(path)
         features.append(img)

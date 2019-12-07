@@ -7,6 +7,7 @@ from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
+from scipy.spatial import KDTree
 import tf
 import cv2
 import yaml
@@ -60,8 +61,9 @@ class TLDetector(object):
     def waypoints_cb(self, waypoints):
         self.waypoints = waypoints
         if not self.waypoints_2d:
-            self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
-            self.waypoints_tree = KDTree(self.waypoints_2d)
+		self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
+		self.waypoints_tree = KDTree(self.waypoints_2d)
+	print("WaypointCB")
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -77,7 +79,7 @@ class TLDetector(object):
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()
-
+	
         '''
         Publish upcoming red lights at camera frequency.
         Each predicted state has to occur `STATE_COUNT_THRESHOLD` number
@@ -108,7 +110,7 @@ class TLDetector(object):
         """
         #TODO implement
         #return 0
-        closest_idx = self.waypoint_tree.query([x,y], 1)[1]
+        closest_idx = self.waypoints_tree.query([x,y], 1)[1]
         return closest_idx
 
 
@@ -129,7 +131,9 @@ class TLDetector(object):
         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
         #Get classification
-        return self.light_classifier.get_classification(cv_image)
+	state = self.light_classifier.get_classification(cv_image)
+	print(str(light.state) + "  " + str(state))
+        return state
 
         #return light.state
 
@@ -167,7 +171,7 @@ class TLDetector(object):
 
         if closest_light:
             state = self.get_light_state(closest_light)
-            return light_wp_idx, state
+            return line_wp_idx, state
         #self.waypoints = None
         return -1, TrafficLight.UNKNOWN
 

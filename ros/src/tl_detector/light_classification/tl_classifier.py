@@ -1,25 +1,5 @@
-# from styx_msgs.msg import TrafficLight
-
-# class TLClassifier(object):
-#     def __init__(self, is_site):
-#         #TODO load classifier
-#         self.is_site = is_site
-
-#     def get_classification(self, image):
-#         """Determines the color of the traffic light in the image
-
-#         Args:
-#             image (cv::Mat): image containing the traffic light
-
-#         Returns:
-#             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
-
-#         """
-#         #TODO implement light color prediction
-#         return TrafficLight.UNKNOWN
-
-#import rospy
-#from styx_msgs.msg import TrafficLight
+import rospy
+from styx_msgs.msg import TrafficLight
 import tensorflow as tf
 from PIL import Image
 import cv2
@@ -27,7 +7,6 @@ import numpy as np
 from glob import glob
 import os
 from keras.models import load_model
-from read_label_file import get_all_labels
 import sys
 import csv
 
@@ -45,21 +24,12 @@ class TLClassifier(object):
 
         # load keras Lenet style model from file
         if self.is_site is True:
-            self.class_model = load_model(cwd+'/model.h5')
+            self.class_model = load_model(cwd+'/model/model.h5')
         else:
-            self.class_model = load_model(cwd+'/models/model_sim.h5')
+            self.class_model = load_model(cwd+'/model/model_sim.h5')
         self.class_graph = tf.get_default_graph()
 
-        # # detection graph
-        # self.dg = tf.Graph()
-        # # load 
-        # with self.dg.as_default():
-        #     gdef = tf.GraphDef()
-        #     with open(cwd+"/models/frozen_inference_graph.pb", 'rb') as f:
-        #         gdef.ParseFromString( f.read() )
-        #         tf.import_graph_def( gdef, name="" )
-        
-        self.dg = self.load_graph(cwd+"/models/frozen_inference_graph.pb")
+        self.dg = self.load_graph(cwd+"/model/frozen_inference_graph.pb")
         
         #get names of nodes. from https://www.activestate.com/blog/2017/08/using-pre-trained-models-tensorflow-go
         self.session = tf.Session(graph=self.dg )
@@ -70,9 +40,10 @@ class TLClassifier(object):
         self.num_detections    = self.dg.get_tensor_by_name('num_detections:0')
 
         self.tlclasses = [ TrafficLight.RED, TrafficLight.YELLOW, TrafficLight.GREEN ]
-        #self.tlclasses = [ 0, 1, 2 ]
-        self.tlclasses_d = { 0 : "RED", 1:"YELLOW", 2:"GREEN", -1:"UNKNOWN" }
-
+	self.tlclasses_d = { TrafficLight.RED: "RED", TrafficLight.YELLOW:"YELLOW", TrafficLight.GREEN:"GREEN", TrafficLight.UNKNOWN:"UNKNOWN" }
+#        self.tlclasses = [ 0, 1, 2 ]
+#        self.tlclasses_d = { 0 : "RED", 1:"YELLOW", 2:"GREEN", -1:"UNKNOWN" }
+	print("TLDetect")
         pass
 
     def filter_boxes(self, min_score, boxes, scores, classes):
@@ -88,29 +59,6 @@ class TLClassifier(object):
         filtered_classes = classes[idxs, ...]
         return filtered_boxes, filtered_scores, filtered_classes
 
-    # def to_image_coords(boxes, height, width):
-    #     """
-    #     The original box coordinate output is normalized, i.e [0, 1].
-        
-    #     This converts it back to the original coordinate based on the image
-    #     size.
-    #     """
-    #     box_coords = np.zeros_like(boxes)
-    #     box_coords[:, 0] = boxes[:, 0] * height
-    #     box_coords[:, 1] = boxes[:, 1] * width
-    #     box_coords[:, 2] = boxes[:, 2] * height
-    #     box_coords[:, 3] = boxes[:, 3] * width
-        
-    #     return box_coords
-
-    # def draw_boxes(image, boxes, classes, thickness=4):
-    #     """Draw bounding boxes on the image"""
-    #     draw = ImageDraw.Draw(image)
-    #     for i in range(len(boxes)):
-    #         bot, left, top, right = boxes[i, ...]
-    #         class_id = int(classes[i])
-    #         color = COLOR_LIST[class_id]
-    #         draw.line([(left, top), (left, bot), (right, bot), (right, top), (left, top)], width=thickness, fill=color)
             
     def load_graph(self, graph_file):
         """Loads a frozen inference graph"""
@@ -173,10 +121,6 @@ class TLClassifier(object):
             detection_scores = np.squeeze(detection_scores)
 
 
-            # print(detection_classes)
-            # print(detection_scores)
-            # print(detection_boxes)
-
             ret = None
             detection_threshold = 0.3
 
@@ -184,32 +128,6 @@ class TLClassifier(object):
             # Filter boxes with a confidence score less than `confidence_cutoff`
             boxes, scores, classes = self.filter_boxes(confidence_cutoff, detection_boxes, detection_scores, detection_classes)
 
-            # print(classes)
-            # print(scores)
-            # print(boxes)
-
-            # # Find first detection of signal. It's labeled with number 10
-            # idx = -1
-            # for i, cl in enumerate(detection_classes.tolist()):
-            #     if cl == 10:
-            #         idx = i;
-            #         break;
-
-            # if idx == -1:
-            #     pass  # no signals detected
-            # elif detection_scores[idx] < detection_threshold:
-            #     pass # we are not confident of detection
-            # else:
-            #     dim = image.shape[0:2]
-            #     box = self.from_normalized_dims__to_pixel(detection_boxes[idx], dim)
-            #     box_h, box_w  = (box[2] - box[0], box[3]-box[1] )
-            #     if (box_h <20) or (box_w<20):  
-            #         pass    # box too small 
-            #     elif ( box_h/box_w <1.2):
-            #         pass    # wrong ratio
-            #     else:
-            #         #rospy.loginfo('detected bounding box: {} conf: {}'.format(box, detection_scores[idx]))
-            #         ret = box
 
             dim = image.shape[0:2]
             for idx in range(len(boxes)):
@@ -315,10 +233,10 @@ if __name__ == '__main__':
                     print( cl.tlclasses_d[status], ',', box['label'])
 
     if False:
-        cl = TLClassifier()
+        cl = TLClassifier(False)
         # input_yaml = sys.argv[1]
         # images = get_all_labels(input_yaml)
-        paths = glob(os.path.join('sim_image_data_and_label/', '*.jpg'))
+        paths = glob(os.path.join('test/', '*.jpg'))
         for path in paths:
             img = cv2.imread(path)
             status = cl.get_classification( img )
