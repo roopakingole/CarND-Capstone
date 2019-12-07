@@ -4,8 +4,8 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 from scipy.spatial import KDTree
+from std_msgs.msg import Int32
 import numpy as np
-
 import math
 
 '''
@@ -32,7 +32,7 @@ class WaypointUpdater(object):
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-        rospy.Subscriber('/traffic_waypoint', Lane, self.traffic_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
@@ -42,6 +42,7 @@ class WaypointUpdater(object):
         # TODO: Add other member variables you need below
         self.pose = None
         self.base_waypoints = None
+	self.stopline_wp_idx = -1
         self.waypoints_2d = None
         self.waypoints_tree = None
 
@@ -91,7 +92,7 @@ class WaypointUpdater(object):
         if self.stopline_wp_idx == -1 or (self.stopline_wp_idx >= farthest_idx):
             lane.waypoints = base_wps
         else:
-            lane.wayporints = self.decelerate_waypoints(base_wps, closest_idx)
+            lane.waypoints = self.decelerate_waypoints(base_wps, closest_idx)
 
         return lane
 
@@ -103,13 +104,13 @@ class WaypointUpdater(object):
             p.pose = wp.pose
 
             stop_idx = max(self.stopline_wp_idx - closest_idx - 2, 0) # two waypoints back from line so front of car stops at the stop line
-            dist = self.distance(wayppints, i, stop_idx)
+            dist = self.distance(waypoints, i, stop_idx)
             vel = math.sqrt(2 * MAX_DECEL * dist)
             if vel < 1.:
                 vel = 0.
 
             p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
-            temp.appent(p)
+            temp.append(p)
         return temp
         
     def pose_cb(self, msg):
